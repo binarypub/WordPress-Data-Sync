@@ -1,0 +1,1189 @@
+<?php 
+// PHP script to be executed via crontab that copies current WP inventory to another site in WP-Multisite 
+ob_start(); 
+
+ini_set('display_startup_errors',1);
+ini_set('display_errors',1);
+error_reporting(-1);
+
+include("/opt/bitnami/apps/wordpress/htdocs/wp-load.php");
+
+
+ // functions
+
+ function checkNum($num){
+  return ($num%2) ? TRUE : FALSE;
+}
+
+//strings
+
+// which blog(s) aare we updating
+
+//import destination blog
+$blog_id_1 = 25;
+
+//import source blog
+$blog_id_2 = 1;
+
+//blog author we are masquerading as
+$blog_author = 3;
+
+// connection string(s)
+ 
+$servername = "localhost";
+$username = "******";
+$password = "********";
+$dbname = "*******";
+
+// Create connection
+$conn = new mysqli($servername, $username, $password, $dbname);
+// Check connection
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+} 
+
+
+// clean up, first delete posts from Spanish website
+
+
+// delete taxonomy
+
+
+// rebuild taxonomy
+
+
+// select custom posts
+
+
+// insert posts
+
+
+// delete expired
+
+switch_to_blog($blog_id_1);
+
+//get post ids
+
+
+$args = array(
+	'posts_per_page'   => -1,
+	'paged'            => 0,
+	'orderby'          => 'post_date',
+	'order'            => 'DESC',
+	//'post_type'			=> 'ccf'
+	'post_status'      => array('publish', 'inherit'),
+    'post_type' => 'carellcars'
+);
+
+$posts_array = get_posts($args); 
+
+$spanish_count = count($posts_array);
+
+switch_to_blog($blog_id_2);
+
+
+$args2 = array(
+	'posts_per_page'   => -1,
+	'paged'            => 0,
+	'orderby'          => 'post_date',
+	'order'            => 'DESC',
+	//'post_type'			=> 'ccf'
+	'post_status'      => array('publish', 'inherit'),
+    'post_type' => 'carellcars'		
+);
+
+$posts_array2 = get_posts($args2); 
+
+$english_count = count($posts_array2);
+
+
+if ($spanish_count != $english_count) {
+//count not equal, run script
+
+switch_to_blog($blog_id_1);
+
+foreach($posts_array as $post)
+	{		
+		
+	$z = $z + 1;
+	
+	
+	$my_post = array();
+   
+	wp_delete_post( $post->ID, 1 );
+  
+	// wp_ccf_values
+  
+	// delete ccf from ccf_table
+	$sql = "DELETE FROM wp_25_ccf_values WHERE post_id = ".$post->ID;
+	$result = $conn->query($sql);
+
+   
+   
+   }
+   
+//ccf field maintenance
+
+//die;
+
+// delete old ccf meta by id  from postmeta table
+   
+switch_to_blog($blog_id_1);
+
+delete_post_meta_by_key( 'ccf_fields' );
+delete_post_meta_by_key( 'ccf_rules' );
+delete_post_meta_by_key( 'ccf_default_fields' );
+
+delete_post_meta_by_key( 'car-details' );
+delete_post_meta_by_key( 'car-equipment' ); 
+
+
+
+//get post ids
+switch_to_blog($blog_id_1);
+
+$sql = "DELETE FROM wp_25_posts WHERE post_type = 'ccf'";
+$result = $conn->query($sql);
+//$conn->close(); 
+
+
+// delete old ccf table
+
+$sql = "DELETE FROM wp_25_ccf_values";
+$result = $conn->query($sql);
+
+$sql = "DELETE FROM wp_25_ccf_sessions";
+$result = $conn->query($sql);
+
+###################################################### End maintenance
+
+switch_to_blog($blog_id_2);
+
+
+$args2 = array(
+	'posts_per_page'   => -1,
+	'paged'            => 0,
+	'orderby'          => 'post_date',
+	'order'            => 'DESC',
+	//'post_type'			=> 'ccf'
+	'post_status'      => array('publish', 'inherit'),
+    'post_type' => array('carellcars', 'attachment')		
+);
+
+$posts_array2 = get_posts($args2); 
+
+
+foreach($posts_array2 as $post)
+	{
+	switch_to_blog($blog_id_2);	
+		
+	$z = $z + 1;
+	
+	
+  $my_post = array();
+  $my_post['post_title'] = $post->post_title;
+  $my_post['post_content'] = $post->post_content;
+  $my_post['post_excerpt'] = $post->post_excerpt;
+  $my_post['post_status'] = $post->post_status;
+  $my_post['post_author'] = $blog_author;
+ //$my_post['post_date'] = $post->post_date;
+  $my_post['post_date_gmt'] = $post->post_date_gmt;
+  $my_post['post_status'] = $post->post_status;
+  $my_post['comment_status'] = $post->comment_status;
+  $my_post['ping_status'] = $post->ping_status;
+  $my_post['post_name'] = $post->post_name;
+  $my_post['post_modified'] = $post->post_modified;
+  $my_post['post_modified_gmt'] = $post->post_modified_gmt;
+  $my_post['guid'] = $post->guid;
+  $my_post['post_mime_type'] = $post->post_mime_type;
+  $my_post['comment_count'] = $post->comment_count;
+  $my_post['post_type'] = 'post';
+  $my_post['post_date'] = date('Y-m-d H:i:s');
+  $my_post['tags_input'] = 'aerial lift equipment, boom lifts, scissor lifts';
+  
+
+  
+ 
+
+// image metas
+
+// don't ibnsert post_meta if post type = ccf or attachment
+
+if ($post->post_type == "carellcars") {	
+	
+	 // image meta  
+	 // field_id = none?
+	$car_image =  get_post_meta( $post->ID, 'car_image', true );
+
+	// car year
+	//field id = 3
+	$car_year = get_post_meta( $post->ID, 'car_year', true );
+
+	// car mileage
+	//field id = 2
+	$car_mileage = get_post_meta( $post->ID, 'car_mileage', true );
+
+	// car price
+	//field_id = 1
+	$car_price = get_post_meta( $post->ID, 'car_price', true );
+
+	// car model
+	// none?
+	$car_model = get_post_meta( $post->ID, 'car_model', true );
+
+	// telescopic jib
+	//field_id = 48
+	$telescopic_jib = get_post_meta( $post->ID, 'telescopic_jib', true );
+
+	// jib
+	// field_id = 33
+	$jib = get_post_meta( $post->ID, 'jib', true );
+	
+	// working_light_package
+	//filed_id = 45
+	$working_light_package = get_post_meta( $post->ID, 'working_light_package', true );
+
+	// factory_work_lights
+	//field_id = 43
+	$factory_work_lights = get_post_meta( $post->ID, 'factory_work_lights', true );
+
+	// enclosed_cab_with_heat
+	//field_id = 42
+	$enclosed_cab_with_heat = get_post_meta( $post->ID, 'enclosed_cab_with_heat', true );
+
+	//cpt_pdf_attachment1
+	//field_id = none?
+	$cpt_pdf_attachment1 = get_post_meta( $post->ID, 'cpt_pdf_attachment1', true );
+
+	// fork_leveling
+	//field_id = 39
+	$fork_leveling = get_post_meta( $post->ID, 'fork_leveling', true );
+
+	// frame_leveling
+	//field_id = 40
+	$frame_leveling = get_post_meta( $post->ID, 'frame_leveling', true );
+
+	// extendable_text
+	//field_id = 41
+	$extendable_text = get_post_meta( $post->ID, 'extendable_text', true );
+
+	// oscillating_axel
+	//field_id = 32
+	$oscillating_axel = get_post_meta( $post->ID, 'oscillating_axel', true );
+
+	// articulated_boom
+	//field_id = 31
+	$articulated_boom = get_post_meta( $post->ID, 'articulated_boom', true );
+
+	// 4_wheel_steering
+	//field_id = 30
+	$wheel_steering = get_post_meta( $post->ID, '4_wheel_steering', true );
+
+	// rotating_jib
+	//field_id = 29
+	$rotating_jib = get_post_meta( $post->ID, 'rotating_jib', true );
+
+	// sky_power
+	//field_id = 28
+	$sky_power = get_post_meta( $post->ID, 'sky_power', true );
+
+	// traverse carriage
+	//field_id = 27
+	$traverse_carriage = get_post_meta( $post->ID, 'traverse_carriage', true );
+
+	// 110v Generator
+	//field_id = 26
+	$generator = get_post_meta( $post->ID, '110v_generator', true );
+
+	// reach
+	//field_id = 4 and 5
+	$reach = get_post_meta( $post->ID, 'reach', true );
+
+	// power type
+	//field_id = 47
+	$power_type = get_post_meta( $post->ID, 'power_type', true );
+
+	// basket_size
+	//field_id = 38
+	$basket_size = get_post_meta( $post->ID, 'basket_size', true );
+
+	// engine
+	//field_id = 35
+	$engine = get_post_meta( $post->ID, 'engine', true );
+
+	// approx_gross_weight
+	//field_id = 15
+	$approx_gross_weight = get_post_meta( $post->ID, 'approx_gross_weight', true );
+
+	// horizontal reach
+	//field_id = 13
+	$horizontal_reach = get_post_meta( $post->ID, 'horizontal_reach', true );
+
+	// vertical_reach
+	//field_id = 14
+	$vertical_reach = get_post_meta( $post->ID, 'vertical_reach', true );
+
+	// overall_condition
+	//field_id = 12
+	$overall_condition = get_post_meta( $post->ID, 'overall_condition', true );
+
+	// paint_condition
+	//field_id = 16
+	$paint_condition = get_post_meta( $post->ID, 'paint_condition', true );
+
+	// rotating_jib
+	//field_id = 29
+	$rotating_jib = get_post_meta( $post->ID, 'rotating_jib', true );
+
+	// tire_condition
+	//field_id = 11
+	$tire_condition = get_post_meta( $post->ID, 'tire_condition', true );
+
+	// tire_type
+	//field_id = 10
+	$tire_type = get_post_meta( $post->ID, 'tire_type', true );
+
+	// serial_
+	//field_id = 9
+	$serial_ = get_post_meta( $post->ID, 'serial_', true );
+
+	// drive_train
+	//field_id = 8
+	$drive_train = get_post_meta( $post->ID, 'drive_train', true );
+
+	// capacity
+	//field_id = 7
+	$capacity = get_post_meta( $post->ID, 'capacity', true );
+
+	// lift_type
+	//field_id = 6
+	$lift_type = get_post_meta( $post->ID, 'lift_type', true );
+
+	// _vc_post_settings
+	//field_id = none?
+	$_vc_post_settings = get_post_meta( $post->ID, '_vc_post_settings', true );
+
+	// car_manufacturer
+	//field_id = none?
+	$car_manufacturer = get_post_meta( $post->ID, 'car_manufacturer', true );
+	
+	// car_featured
+	//field_id = none?
+	$car_featured = get_post_meta( $post->ID, 'featured', true );
+
+  
+  $my_post['meta_input'] = array(
+        'car_image' => $car_image,
+		'car_year' => $car_year,
+		'car_mileage' => $car_mileage,
+		'car_price' => $car_price,
+		'car_model' => $car_model,
+		'telescopic_jib' => $telescopic_jib,
+		'jib' => $jib,
+		'working_light_package' => $working_light_package,
+		'factory_work_lights' => $factory_work_lights,
+		'enclosed_cab_with_heat' => $enclosed_cab_with_heat,
+		'cpt_pdf_attachment1' => $cpt_pdf_attachment1,
+		'fork_leveling' => $fork_leveling,
+		'frame_leveling' => $frame_leveling,
+		'extendable_text' => $extendable_text,
+		'oscillating_axel' => $oscillating_axel,
+		'articulated_boom' => $articulated_boom,
+		'4_wheel_steering' => $wheel_steering,
+		'rotating_jib' => $rotating_jib,
+		'sky_power' => $sky_power,
+		'traverse_carriage' => $traverse_carriage,
+		'110v_generator' => $generator,
+		'reach' => $reach,
+		'power_type' => $power_type,
+		'basket_size' => $basket_size,
+		'engine' => $engine,
+		'approx_gross_weight' => $approx_gross_weight,
+		'horizontal_reach' => $horizontal_reach,
+		'vertical_reach' => $vertical_reach,
+		'overall_condition' => $overall_condition,
+		'paint_condition' => $paint_condition,
+		'rotating_jib' => $rotating_jib,
+		'tire_condition' => $tire_condition,
+		'tire_type' => $tire_type,
+		'serial_' => $serial_,
+		'drive_train' => $drive_train,
+		'capacity' => $capacity,
+		'lift_type' => $lift_type,
+		'_vc_post_settings' => $_vc_post_settings,
+		'car_manufacturer' => $car_manufacturer,
+		'featured' => $car_featured
+		
+);
+
+		$my_post['post_type'] = 'carellcars';
+		
+// create ccf table here?
+
+}
+
+// this grabs the image data for copying
+
+if ($post->post_type == "attachment") {
+	
+	
+	// _wp_attachment_metadata
+	$_wp_attachment_metadata = get_post_meta( $post->ID, '_wp_attachment_metadata', true );
+
+
+	// _wp_attached_file
+	$_wp_attached_file = get_post_meta( $post->ID, '_wp_attached_file', true );
+
+  
+    $my_post['meta_input'] =  array(
+        '_wp_attachment_metadata' => $_wp_attachment_metadata,
+		'_wp_attached_file' => $_wp_attached_file);	
+		
+	$my_post['post_type'] = 'attachment';
+	
+	$my_post['post_excerpt'] = $post->ID;
+}
+
+
+
+
+// Insert the post into the database  
+//returns ID of post
+
+  switch_to_blog($blog_id_1);  
+  $current_blog_id = get_current_blog_id();
+
+  
+  $post_id = wp_insert_post($my_post, true);
+  
+// update 
+
+
+
+#########################################################################  
+  
+ switch_to_blog($blog_id_2);
+
+$sql_2 = "SELECT * FROM wp_ccf_values WHERE post_id = ". $post->ID;
+$result_2 = $conn->query($sql_2);
+
+// now we have array of 'field_id(s)', loop through them and pair with new meta ids
+ 
+if ($result_2->num_rows > 0) {
+    // output data of each row
+    while($row_2 = $result_2->fetch_assoc()) {
+		
+		$field_id = $row_2['field_id'];
+		
+		echo $field_id;
+
+		
+		$sql_3 = "INSERT INTO wp_25_ccf_values (field_id, post_id) VALUES ('".$row_2['field_id']."', '".$post_id."')";
+		
+		echo $sql3;
+	
+		
+		$result_3 = $conn->query($sql_3);
+		
+		
+		// fet 
+			
+
+    }
+	
+	
+} else {
+    //echo "0 results";
+	}
+} 
+	
+	
+###################################################################################	
+
+
+// add new ccf, match wiuth associated records copied to posts table above
+
+// copy ccf posts
+
+// get ccf wp_posts data from main blog and copy to new wp_25_posts table
+
+switch_to_blog($blog_id_2);
+
+$sql = "SELECT * FROM wp_posts WHERE post_type = 'ccf'";
+$result = $conn->query($sql);
+
+if ($result->num_rows > 0) {
+    // output data of each row
+    while($row = $result->fetch_assoc()) {
+		
+			//insert ccf data into spanish blog wp_posts
+			switch_to_blog($blog_id_1);
+			$sql_2 = "INSERT INTO wp_25_posts (post_author, post_date, post_date_gmt, post_content, post_title, post_excerpt, post_status, comment_status, ping_status, post_name, post_modified, post_modified_gmt, post_parent, guid, menu_order, post_type, post_mime_type, comment_count, to_ping, pinged, post_content_filtered) VALUES ('3', '".$row['post_date']."', '".$row['post_date_gmt']."', '".$row['post_content']."', '".$row['post_title']."', '".$row['post_excerpt']."', '".$row['post_status']."', '".$row['comment_status']."', '".$row['ping_status']."', '".$row['post_name']."', '".$row['post_modified']."', '".$row['post_modified_gmt']."', '".$row['post_parent']."', '".$row['post_guid']."', '".$row['menu_order']."', '".$row['post_type']."', '".$row['post_mime_type']."', '".$row['comment_count']."', '".$row['to_ping']."', '".$row['pinged']."', '".$row['post_content_filtered']."')";
+			$result_2 = $conn->query($sql_2);
+			
+			switch_to_blog($blog_id_2);
+    }
+} else {
+    //echo "0 results";
+}
+//$conn->close(); 
+
+// get wp_posts ccf ids that were just inserted
+
+
+switch_to_blog($blog_id_1);
+
+$sql = "SELECT * FROM wp_25_posts WHERE post_type = 'ccf' and post_name = 'car-details'";
+$result = $conn->query($sql);
+
+if ($result->num_rows > 0) {
+    // output data of each row
+    while($row = $result->fetch_assoc()) {
+        //print_r($row);
+		//$ID = $row['ID'];
+		$espanol_details_my_post_id = $row['ID'];
+		
+		//echo "<br>FASH" . $espanol_details_my_post_id . "<br>";
+		
+    }
+} else {
+    //echo "0 results";
+}
+
+switch_to_blog($blog_id_1);
+
+$sql = "SELECT * FROM wp_25_posts WHERE post_type = 'ccf' and post_name = 'car-equipment'";
+$result = $conn->query($sql);
+
+if ($result->num_rows > 0) {
+    // output data of each row
+    while($row = $result->fetch_assoc()) {
+        //print_r($row);
+		//$ID = $row['ID'];
+		$espanol_equipment_my_post_id = $row['ID'];
+		
+    }
+} else {
+    //echo "0 results";
+}
+
+// insert new ccf records into wp_postmeta
+
+// have related post ids, now need to pair with ccf values from main blog and insert
+
+//  ccf_fields 
+
+// 28 = car-details
+// 29 = car-equipment
+
+switch_to_blog($blog_id_1);
+
+add_post_meta( $espanol_details_my_post_id, 'car-details', '' ); 
+add_post_meta( $espanol_equipment_my_post_id, 'car-equipment', '' ); 
+
+
+$sql = "SELECT * FROM wp_postmeta WHERE meta_key = 'ccf_fields' and post_id = 39134";
+$result = $conn->query($sql);
+
+if ($result->num_rows > 0) {
+    // output data of each row
+    while($row = $result->fetch_assoc()) {
+        //print_r($row);
+		//$ID = $row['ID'];
+		$ccf_fields = str_replace("'","''", $row['meta_value']);
+		//$ccf_fields = str_replace("'","''", $ccf_fields)
+		
+		$sql2 = "INSERT INTO wp_25_postmeta (post_id, meta_key, meta_value) VALUES ('".$espanol_details_my_post_id."', 'ccf_fields','".$ccf_fields."')";
+		//echo "assers";
+		//echo $sql2;	
+		$result2 = $conn->query($sql2);
+		//switch_to_blog($blog_id_1);
+		//add_post_meta( $espanol_details_my_post_id, 'ccf_fields', $ccf_fields ); 
+		
+		
+
+		
+    }
+} else {
+    //echo "0 results";
+}
+
+
+
+$sql = "SELECT * FROM wp_postmeta WHERE meta_key = 'ccf_fields' and post_id = 39135";
+$result = $conn->query($sql);
+
+if ($result->num_rows > 0) {
+    // output data of each row
+    while($row = $result->fetch_assoc()) {
+        //print_r($row);
+		//$ID = $row['ID'];
+		$ccf_fields_2 = $row['meta_value'];
+		
+		$sql2 = "INSERT INTO wp_25_postmeta (post_id, meta_key, meta_value) VALUES ('".$espanol_equipment_my_post_id."', 'ccf_fields','".$ccf_fields_2."')";
+		//echo "asser";
+		//echo $sql2;		
+		$result2 = $conn->query($sql2);
+		//switch_to_blog($blog_id_1);
+		//add_post_meta( $espanol_equipment_my_post_id, 'ccf_fields', $ccf_fields_2 ); 
+		
+				
+    }
+} else {
+    //echo "0 results";
+}
+
+
+
+$sql = "SELECT * FROM wp_postmeta WHERE meta_key = 'ccf_rules' and post_id = 39134";
+$result = $conn->query($sql);
+
+if ($result->num_rows > 0) {
+    // output data of each row
+    while($row = $result->fetch_assoc()) {
+
+		$ccf_rules = $row['meta_value'];
+		
+		$sql2 = "INSERT INTO wp_25_postmeta (post_id, meta_key, meta_value) VALUES ('".$espanol_details_my_post_id."', 'ccf_rules','".$ccf_rules."')";
+		$result2 = $conn->query($sql2);
+		
+    }
+} else {
+    //echo "0 results";
+}
+
+
+
+$sql = "SELECT * FROM wp_postmeta WHERE meta_key = 'ccf_rules' and post_id = 39135";
+$result = $conn->query($sql);
+
+if ($result->num_rows > 0) {
+    // output data of each row
+    while($row = $result->fetch_assoc()) {
+        //print_r($row);
+		//$ID = $row['ID'];
+		$ccf_rules_2 = $row['meta_value'];
+		
+		$sql2 = "INSERT INTO wp_25_postmeta (post_id, meta_key, meta_value) VALUES ('".$espanol_equipment_my_post_id."', 'ccf_rules','".$ccf_rules_2."')";
+		$result2 = $conn->query($sql2);
+		//switch_to_blog($blog_id_1);
+		//add_post_meta( $espanol_equipment_my_post_id, 'ccf_rules', $ccf_rules_2 ); 
+    }
+} else {
+    //echo "0 results";
+}
+
+$sql = "SELECT * FROM wp_postmeta WHERE meta_key = 'ccf_default_fields' and post_id = 39134";
+$result = $conn->query($sql);
+
+if ($result->num_rows > 0) {
+    // output data of each row
+    while($row = $result->fetch_assoc()) {
+
+		$ccf_default_fields = $row['meta_value'];
+		
+		$sql2 = "INSERT INTO wp_25_postmeta (post_id, meta_key, meta_value) VALUES ('".$espanol_details_my_post_id."', 'ccf_default_fields','".$ccf_default_fields."')";
+		$result2 = $conn->query($sql2);
+
+		
+    }
+} else {
+    //echo "0 results";
+}
+
+
+
+
+$sql = "SELECT * FROM wp_postmeta WHERE meta_key = 'ccf_default_fields' and post_id = 39135";
+$result = $conn->query($sql);
+
+if ($result->num_rows > 0) {
+    // output data of each row
+    while($row = $result->fetch_assoc()) {
+        //print_r($row);
+		//$ID = $row['ID'];
+		$ccf_default_fields_2 = $row['meta_value'];
+		
+		$sql2 = "INSERT INTO wp_25_postmeta (post_id, meta_key, meta_value) VALUES ('".$espanol_equipment_my_post_id."', 'ccf_default_fields','".$ccf_default_fields_2."')";
+		$result2 = $conn->query($sql2);
+		//switch_to_blog($blog_id_1);
+		//add_post_meta( $espanol_equipment_my_post_id, 'ccf_default_fields', $ccf_default_fields_2 ); 
+		
+    }
+} else {
+    //echo "0 results";
+}
+
+$sql_2 = "SELECT * FROM wp_25_postmeta WHERE meta_key IN ('car_price','car_mileage', 'car_year', 'reach', 'lift_type', 'capacity', 'serial_', 'tire_type', 'tire_condition', 'overall_condition', 'horizontal_reach', 'vertical_reach', 'approx_gross_weight', 'paint_condition', '110v_generator','traverse_carriage', 'sky_power','rotating_jib','4_wheel_steering', 'articulated_boom','oscillating_axel','jib','engine','basket_size', 'fork_leveling','frame_leveling','extendable_text', 'enclosed_cab_with_heat','factory_work_lights','working_light_package','articulated_boom','power_type','telescopic_jib','', 'featured')";
+$result_2 = $conn->query($sql_2);
+
+
+if ($result_2->num_rows > 0) {
+    // output data of each row
+    while($row_5 = $result_2->fetch_assoc()) {
+		
+		
+		if ($row_5['meta_key'] == "car_price") {
+		
+		$sql_6 = "UPDATE wp_25_ccf_values set meta_id = ". $row_5['meta_id'] ." WHERE field_id = 1 and post_id =". $row_5['post_id'];
+		$result_6 = $conn->query($sql_6);		
+			
+			
+		}		
+		
+		
+		if ($row_5['meta_key'] == "car_mileage") {
+		
+		$sql_6 = "UPDATE wp_25_ccf_values set meta_id = ". $row_5['meta_id'] ." WHERE field_id = 2 and post_id =". $row_5['post_id'];
+		$result_6 = $conn->query($sql_6);		
+			
+			
+		}
+		
+		if ($row_5['meta_key'] == "car_year") {
+		
+		$sql_6 = "UPDATE wp_25_ccf_values set meta_id = ". $row_5['meta_id'] ." WHERE field_id = 3 and post_id =". $row_5['post_id'];
+		$result_6 = $conn->query($sql_6);		
+			
+			
+		}
+		
+		if (($row_5['meta_key'] == "reach")) {
+		
+		$sql_6 = "UPDATE wp_25_ccf_values set meta_id = ". $row_5['meta_id'] ." WHERE field_id = 4 and post_id =". $row_5['post_id'];
+		$result_6 = $conn->query($sql_6);	
+		$sql_6 = "UPDATE wp_25_ccf_values set meta_id = ". $row_5['meta_id'] ." WHERE field_id = 5 and post_id =". $row_5['post_id'];
+		$result_6 = $conn->query($sql_6);				
+			
+			
+		}
+		
+		if ($row_5['meta_key'] == "lift_type") {
+		
+		$sql_6 = "UPDATE wp_25_ccf_values set meta_id = ". $row_5['meta_id'] ." WHERE field_id = 6 and post_id =". $row_5['post_id'];
+		$result_6 = $conn->query($sql_6);		
+			
+			
+		}
+		
+		if ($row_5['meta_key'] == "capacity") {
+		
+		$sql_6 = "UPDATE wp_25_ccf_values set meta_id = ". $row_5['meta_id'] ." WHERE field_id = 7 and post_id =". $row_5['post_id'];
+		$result_6 = $conn->query($sql_6);		
+			
+			
+		}
+		
+		if ($row_5['meta_key'] == "lift_type") {
+		
+		$sql_6 = "UPDATE wp_25_ccf_values set meta_id = ". $row_5['meta_id'] ." WHERE field_id = 8 and post_id =". $row_5['post_id'];
+		$result_6 = $conn->query($sql_6);		
+			
+			
+		}
+				
+		if ($row_5['meta_key'] == "serial_") {
+		
+		$sql_6 = "UPDATE wp_25_ccf_values set meta_id = ". $row_5['meta_id'] ." WHERE field_id = 9 and post_id =". $row_5['post_id'];
+		$result_6 = $conn->query($sql_6);		
+			
+			
+		}
+		
+		if ($row_5['meta_key'] == "tire_type") {
+		
+		$sql_6 = "UPDATE wp_25_ccf_values set meta_id = ". $row_5['meta_id'] ." WHERE field_id = 10 and post_id =". $row_5['post_id'];
+		$result_6 = $conn->query($sql_6);		
+			
+			
+		}
+		
+		if ($row_5['meta_key'] == "tire_condition") {
+		
+		$sql_6 = "UPDATE wp_25_ccf_values set meta_id = ". $row_5['meta_id'] ." WHERE field_id = 11 and post_id =". $row_5['post_id'];
+		$result_6 = $conn->query($sql_6);		
+			
+			
+		}
+		
+		if ($row_5['meta_key'] == "overall_condition") {
+		
+		$sql_6 = "UPDATE wp_25_ccf_values set meta_id = ". $row_5['meta_id'] ." WHERE field_id = 12 and post_id =". $row_5['post_id'];
+		$result_6 = $conn->query($sql_6);		
+			
+			
+		}
+				
+		if ($row_5['meta_key'] == "horizontal_reach") {
+		
+		$sql_6 = "UPDATE wp_25_ccf_values set meta_id = ". $row_5['meta_id'] ." WHERE field_id = 13 and post_id =". $row_5['post_id'];
+		$result_6 = $conn->query($sql_6);		
+			
+			
+		}
+		
+		if ($row_5['meta_key'] == "vertical_reach") {
+		
+		$sql_6 = "UPDATE wp_25_ccf_values set meta_id = ". $row_5['meta_id'] ." WHERE field_id = 14 and post_id =". $row_5['post_id'];
+		$result_6 = $conn->query($sql_6);		
+			
+			
+		}
+		
+		if ($row_5['meta_key'] == "approx_gross_weight") {
+		
+		$sql_6 = "UPDATE wp_25_ccf_values set meta_id = ". $row_5['meta_id'] ." WHERE field_id = 15 and post_id =". $row_5['post_id'];
+		$result_6 = $conn->query($sql_6);		
+			
+			
+		}
+		
+		if ($row_5['meta_key'] == "paint_condition") {
+		
+		$sql_6 = "UPDATE wp_25_ccf_values set meta_id = ". $row_5['meta_id'] ." WHERE field_id = 16 and post_id =". $row_5['post_id'];
+		$result_6 = $conn->query($sql_6);		
+			
+			
+		}
+		
+		if ($row_5['meta_key'] == "110v_generator") {
+		
+		$sql_6 = "UPDATE wp_25_ccf_values set meta_id = ". $row_5['meta_id'] ." WHERE field_id = 26 and post_id =". $row_5['post_id'];
+		$result_6 = $conn->query($sql_6);		
+			
+			
+		}
+		
+		
+		if ($row_5['meta_key'] == "traverse_carriage") {
+		
+		$sql_6 = "UPDATE wp_25_ccf_values set meta_id = ". $row_5['meta_id'] ." WHERE field_id = 27 and post_id =". $row_5['post_id'];
+		$result_6 = $conn->query($sql_6);		
+			
+			
+		}
+		
+		if ($row_5['meta_key'] == "sky_power") {
+		
+		$sql_6 = "UPDATE wp_25_ccf_values set meta_id = ". $row_5['meta_id'] ." WHERE field_id = 28 and post_id =". $row_5['post_id'];
+		$result_6 = $conn->query($sql_6);		
+			
+			
+		}
+		
+		if ($row_5['meta_key'] == "rotating_jib") {
+		
+		$sql_6 = "UPDATE wp_25_ccf_values set meta_id = ". $row_5['meta_id'] ." WHERE field_id = 29 and post_id =". $row_5['post_id'];
+		$result_6 = $conn->query($sql_6);		
+			
+			
+		}
+		
+		if ($row_5['meta_key'] == "4_wheel_steering") {
+		
+		$sql_6 = "UPDATE wp_25_ccf_values set meta_id = ". $row_5['meta_id'] ." WHERE field_id = 30 and post_id =". $row_5['post_id'];
+		$result_6 = $conn->query($sql_6);		
+			
+			
+		}
+		
+		//31 and 46 articulated_boom
+		
+		if ($row_5['meta_key'] == "articulated_boom") {
+		
+		$sql_6 = "UPDATE wp_25_ccf_values set meta_id = ". $row_5['meta_id'] ." WHERE field_id = 31 and post_id =". $row_5['post_id'];
+		$result_6 = $conn->query($sql_6);		
+			
+			
+		}
+		
+		if ($row_5['meta_key'] == "oscillating_axel") {
+		
+		$sql_6 = "UPDATE wp_25_ccf_values set meta_id = ". $row_5['meta_id'] ." WHERE field_id = 32 and post_id =". $row_5['post_id'];
+		$result_6 = $conn->query($sql_6);		
+			
+			
+		}
+		
+		if ($row_5['meta_key'] == "jib") {
+		
+		$sql_6 = "UPDATE wp_25_ccf_values set meta_id = ". $row_5['meta_id'] ." WHERE field_id = 33 and post_id =". $row_5['post_id'];
+		$result_6 = $conn->query($sql_6);		
+			
+			
+		}
+		
+		if ($row_5['meta_key'] == "engine") {
+		
+		$sql_6 = "UPDATE wp_25_ccf_values set meta_id = ". $row_5['meta_id'] ." WHERE field_id = 35 and post_id =". $row_5['post_id'];
+		$result_6 = $conn->query($sql_6);		
+			
+			
+		}
+		
+		if ($row_5['meta_key'] == "basket_size") {
+		
+		$sql_6 = "UPDATE wp_25_ccf_values set meta_id = ". $row_5['meta_id'] ." WHERE field_id = 38 and post_id =". $row_5['post_id'];
+		$result_6 = $conn->query($sql_6);		
+			
+			
+		}
+		
+		if ($row_5['meta_key'] == "fork_leveling") {
+		
+		$sql_6 = "UPDATE wp_25_ccf_values set meta_id = ". $row_5['meta_id'] ." WHERE field_id = 39 and post_id =". $row_5['post_id'];
+		$result_6 = $conn->query($sql_6);		
+			
+			
+		}
+		
+		if ($row_5['meta_key'] == "frame_leveling") {
+		
+		$sql_6 = "UPDATE wp_25_ccf_values set meta_id = ". $row_5['meta_id'] ." WHERE field_id = 40 and post_id =". $row_5['post_id'];
+		$result_6 = $conn->query($sql_6);		
+			
+			
+		}
+		
+		if ($row_5['meta_key'] == "extendable_text") {
+		
+		$sql_6 = "UPDATE wp_25_ccf_values set meta_id = ". $row_5['meta_id'] ." WHERE field_id = 41 and post_id =". $row_5['post_id'];
+		$result_6 = $conn->query($sql_6);		
+			
+			
+		}
+		
+		if ($row_5['meta_key'] == "enclosed_cab_with_heat") {
+		
+		$sql_6 = "UPDATE wp_25_ccf_values set meta_id = ". $row_5['meta_id'] ." WHERE field_id = 42 and post_id =". $row_5['post_id'];
+		$result_6 = $conn->query($sql_6);		
+			
+			
+		}
+		
+		
+		if ($row_5['meta_key'] == "factory_work_lights") {
+		
+		$sql_6 = "UPDATE wp_25_ccf_values set meta_id = ". $row_5['meta_id'] ." WHERE field_id = 43 and post_id =". $row_5['post_id'];
+		$result_6 = $conn->query($sql_6);		
+			
+			
+		}
+		
+		if ($row_5['meta_key'] == "working_light_package") {
+		
+		$sql_6 = "UPDATE wp_25_ccf_values set meta_id = ". $row_5['meta_id'] ." WHERE field_id = 45 and post_id =". $row_5['post_id'];
+		$result_6 = $conn->query($sql_6);		
+			
+			
+		}
+		
+		if ($row_5['meta_key'] == "articulated_boom") {
+		
+		$sql_6 = "UPDATE wp_25_ccf_values set meta_id = ". $row_5['meta_id'] ." WHERE field_id = 46 and post_id =". $row_5['post_id'];
+		$result_6 = $conn->query($sql_6);		
+			
+			
+		}
+		
+		
+		if ($row_5['meta_key'] == "power_type") {
+		
+		$sql_6 = "UPDATE wp_25_ccf_values set meta_id = ". $row_5['meta_id'] ." WHERE field_id = 47 and post_id =". $row_5['post_id'];
+		$result_6 = $conn->query($sql_6);		
+			
+			
+		}
+		
+		if ($row_5['meta_key'] == "telescopic_jib") {
+		
+		$sql_6 = "UPDATE wp_25_ccf_values set meta_id = ". $row_5['meta_id'] ." WHERE field_id = 48 and post_id =". $row_5['post_id'];
+		$result_6 = $conn->query($sql_6);		
+			
+			
+		}
+		
+		if ($row_5['meta_key'] === "") {
+			
+		$sql_6 = "UPDATE wp_25_ccf_values set meta_id = ". $row_5['meta_id'] ." WHERE field_id = 49 and post_id =". $row_5['post_id'];
+		$result_6 = $conn->query($sql_6);		
+			
+			
+		}
+		
+		if ($row_5['meta_key'] == "featured") {
+		
+		$sql_6 = "UPDATE wp_25_ccf_values set meta_id = ". $row_5['meta_id'] ." WHERE field_id = 58 and post_id =". $row_5['post_id'];
+		$result_6 = $conn->query($sql_6);		
+			
+			
+		}
+
+		
+		
+	}
+	
+	
+}
+
+
+
+
+####################################################  fix car_image serialized data
+
+// could combine this with car_image above?
+
+switch_to_blog($blog_id_1);
+
+$sql = "SELECT * FROM wp_25_postmeta where meta_key = 'car_image'";
+$result = $conn->query($sql);
+
+
+    // output data of each row
+    while($row = $result->fetch_assoc()) {
+			
+	$meta_id = $row['meta_id'];
+	$car_image = $row['meta_value'];
+	$car_image_array = unserialize(unserialize($row['meta_value']));
+	$car_image_array_x2 = unserialize(unserialize($row['meta_value']));
+	$car_image_string = $row['meta_value'];
+	$post_id = $row['post_id'];
+	
+	
+	
+	
+	// read in car image to array
+	//$car_image_array = unserialize($car_image);
+	//$car_image_array = unserialize($car_image_array);
+	echo "<br>Car Image </br>";
+	print_r($car_image);
+	echo "<br>Car Image Array</br>";
+	print_r($car_image_array);
+	
+	
+	//select all records from wp_25_posts where post_excerpt = car_image[0] to get ids
+	
+	
+	$max = count($car_image_array);
+	
+	for($x=0;$x<$max;$x++) {
+		
+	$sql3 = "SELECT * FROM wp_25_posts where post_excerpt = '".$car_image_array['sm-field-'.$x]."'";
+	$result3 = $conn->query($sql3);
+	
+	echo "<br>";
+	echo $sql3;
+	
+	while($row3 = $result3->fetch_assoc()) {
+			
+	$new_id = $row3['ID'];
+	// need some condition
+	
+	$car_image_array_x2['sm-field-'.$x] = $row3['ID'];
+	
+
+	
+	}		
+	 
+		
+	}
+	echo "<br>New Array<br>";
+	print_r($car_image_array_x2);
+	
+	$update_serial = serialize(serialize($car_image_array_x2));
+	
+	echo "<br><br>";
+	
+	echo $update_serial;
+	
+	
+	$sql2 = "UPDATE wp_25_postmeta SET meta_value = '".$update_serial."' WHERE meta_id = '".$meta_id."'";
+	$result2 = $conn->query($sql2);
+	
+	echo "<br>";
+	echo $sql2;
+	echo "<br>";
+	print_r($result2);
+
+	}
+	
+########################################################## END FIX IMAGE META
+
+
+
+// wp_ccf_value table has post_id and field_id, 
+
+
+$conn->close(); 
+
+ob_flush();
+
+########################################################################################
+
+switch_to_blog($blog_id_2);
+
+
+//make this bitch send me an email
+
+
+$email2 = "*************";
+
+$subject = "*************** Site UPDATE";
+
+$from = "Amazon Server";
+
+$theData = "Update Spanish Website Cron Success";
+function sendHTMLemail($HTML,$from,$to,$subject)
+{
+// First we have to build our email headers
+// Set out "from" address
+
+    $headers = "From: $from\r\n"; 
+
+// Now we specify our MIME version
+
+    $headers .= "MIME-Version: 1.0\r\n"; 
+
+// Create a boundary so we know where to look for
+// the start of the data
+
+    $boundary = uniqid("HTMLEMAIL"); 
+    
+// First we be nice and send a non-html version of our email
+    
+    $headers .= "Content-Type: multipart/alternative;".
+                "boundary = $boundary\r\n\r\n"; 
+
+    $headers .= "This is a MIME encoded message.\r\n\r\n"; 
+
+    $headers .= "--$boundary\r\n".
+                "Content-Type: text/plain; charset=ISO-8859-1\r\n".
+                "Content-Transfer-Encoding: base64\r\n\r\n"; 
+                
+    $headers .= chunk_split(base64_encode(strip_tags($HTML))); 
+
+// Now we attach the HTML version
+
+    $headers .= "--$boundary\r\n".
+                "Content-Type: text/html; charset=ISO-8859-1\r\n".
+                "Content-Transfer-Encoding: base64\r\n\r\n"; 
+                
+    $headers .= chunk_split(base64_encode($HTML)); 
+
+// And then send the email ....
+
+    mail($to,$subject,"",$headers);
+    
+}
+
+sendHTMLemail($theData,$from,$email2,$subject);
+
+
+
+	} else {
+		
+//do nothing
+die;	
+		
+	}
+?>
